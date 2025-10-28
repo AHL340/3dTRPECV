@@ -151,6 +151,48 @@
         if(scope.enableDamping){ ds.theta*=1-scope.dampingFactor; ds.phi*=1-scope.dampingFactor; panOff.multiplyScalar(1-scope.dampingFactor); scale+=(1-scale)*scope.dampingFactor; if(Math.abs(1-scale)<1e-5) scale=1; }
         else { ds.set(0,0,0); panOff.set(0,0,0);} };
       dom.addEventListener('mousedown',onDown); dom.addEventListener('wheel',onWheel,{passive:false}); dom.addEventListener('contextmenu',onContext);
+      // ==== soporte táctil ====
+dom.addEventListener('touchstart', onTouchStart, { passive: false });
+dom.addEventListener('touchmove', onTouchMove, { passive: false });
+dom.addEventListener('touchend', onTouchEnd);
+
+function onTouchStart(e) {
+  if (!scope.enabled) return;
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    // rotación con un dedo
+    state = STATE.ROTATE;
+    start.copy(norm(e.touches[0]));
+  } else if (e.touches.length === 2) {
+    // zoom con dos dedos
+    state = STATE.DOLLY;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    dS.set(0, Math.sqrt(dx * dx + dy * dy));
+  }
+}
+
+function onTouchMove(e) {
+  if (!scope.enabled) return;
+  e.preventDefault();
+  if (state === STATE.ROTATE && e.touches.length === 1) {
+    end.copy(norm(e.touches[0]));
+    ds.theta -= (end.x - start.x) * scope.rotateSpeed * 2;
+    ds.phi -= (end.y - start.y) * scope.rotateSpeed * 2;
+    start.copy(end);
+  } else if (state === STATE.DOLLY && e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    dE.set(0, Math.sqrt(dx * dx + dy * dy));
+    const delta = dE.y - dS.y;
+    scale *= Math.pow(0.95, delta * scope.zoomSpeed * 0.02);
+    dS.copy(dE);
+  }
+}
+
+function onTouchEnd() {
+  state = STATE.NONE;
+}
     }
     window.OrbitControls=OrbitControls;
   })();
