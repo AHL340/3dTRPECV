@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+  Creado por: Dr. A. Hernán-Gómez
+  Año: 2025
+  Proyecto: Visor 3D VSEPR (HTML + Three.js)
+  Nota: Copyright (c) 2025 — Todos los derechos reservados.
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="author" content="Dr. A. Hernán-Gómez" />
+  <meta name="copyright" content="© 2025 Dr. A. Hernán-Gómez — Todos los derechos reservados" />
+  <meta name="license" content="CC BY-NC-SA 4.0" />
+  <meta name="framework" content="Built using Three.js (MIT License) — https://threejs.org/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visor 3D VSEPR (archivo único)</title>
+  <style>
+    :root { --bg:#f7f7fb; --panel:#ffffff; --text:#1d2433; --muted:#667085; --accent:#3559e6; --border:#e5e7ef; }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg)}
+    .app{display:grid;grid-template-columns:360px 1fr;height:100%}
+    .sidebar{background:var(--panel);border-right:1px solid var(--border);padding:18px 16px 16px;overflow:auto}
+    h1{font-size:18px;margin:0 0 10px}
+    .subtitle{color:var(--muted);font-size:13px;margin-bottom:14px}
+    .group{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;background:#fff}
+    .group h2{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+    label{display:block;font-size:13px;margin:8px 0 4px}
+    select,input[type="range"]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{appearance:none;border:1px solid var(--border);background:#fff;color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px}
+    .btn:hover{border-color:#cfd3e3}
+    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .btnbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .flags{display:grid;gap:6px;margin-top:6px}
+    .flag{display:flex;align-items:center;gap:8px;font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    .canvas-wrap{position:relative;height:100%}
+    #three{width:100%;height:100%;display:block;background:#f9fafc}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Visor 3D VSEPR</h1>
+     
+
+      <div class="group">
+        <h2>Preajustes</h2>
+        <label for="preset">Molécula de ejemplo</label>
+        <select id="preset">
+          <option value="">Elige una molécula…</option>
+          <option value="AX2">BeCl₂ → AX₂ (lineal)</option>
+          <option value="AX3">BF₃ → AX₃ (trigonal plana)</option>
+          <option value="AX2E">SnCl₂ → AX₂E (angular)</option>
+          <option value="AX4">CH₄ → AX₄ (tetraédrica)</option>
+          <option value="AX3E">NH₃ → AX₃E (pirámide trigonal)</option>
+          <option value="AX2E2">H₂O → AX₂E₂ (angular)</option>
+          <option value="AX5">PCl₅ → AX₅ (bipirámide trigonal)</option>
+          <option value="AX4E">SF₄ → AX₄E (balancín)</option>
+          <option value="AX3E2">ClF₃ → AX₃E₂ (en T)</option>
+          <option value="AX2E3">I₃⁻ → AX₂E₃ (lineal)</option>
+          <option value="AX6">SF₆ → AX₆ (octaédrica)</option>
+          <option value="AX5E">BrF₅ → AX₅E (pirámide cuadrada)</option>
+          <option value="AX4E2">XeF₄ → AX₄E₂ (plana cuadrada)</option>
+        </select>
+      </div>
+
+      <div class="group">
+        <h2>Geometría</h2>
+        <div class="row">
+          <div>
+            <label for="geometry">Geometría AXE</label>
+            <select id="geometry">
+              <option value="AX2">AX₂ — Lineal (180°)</option>
+              <option value="AX3">AX₃ — Trigonal plana (120°)</option>
+              <option value="AX2E">AX₂E — Angular (&lt;118°)</option>
+              <option value="AX4">AX₄ — Tetraédrica (109,5°)</option>
+              <option value="AX3E">AX₃E — Pirámide trigonal (&lt;109,5°)</option>
+              <option value="AX2E2">AX₂E₂ — Angular (&lt;120°)</option>
+              <option value="AX5">AX₅ — Bipirámide trigonal</option>
+              <option value="AX4E">AX₄E — Balancín (BPT)</option>
+              <option value="AX3E2">AX₃E₂ — En T (BPT)</option>
+              <option value="AX2E3">AX₂E₃ — Lineal (BPT)</option>
+              <option value="AX6">AX₆ — Octaédrica</option>
+              <option value="AX5E">AX₅E — Pirámide cuadrada</option>
+              <option value="AX4E2">AX₄E₂ — Plana cuadrada</option>
+            </select>
+          </div>
+          <div>
+            <label for="bondLength">Longitud de enlace</label>
+            <input id="bondLength" type="range" min="0.6" max="2.0" value="1.0" step="0.05" />
+            <div class="small" id="bondLenValue">1,00 Å (relativa)</div>
+          </div>
+        </div>
+        <div class="flags">
+          <label class="flag"><input type="checkbox" id="showLP" checked> Mostrar pares libres</label>
+        </div>
+        <div class="btnbar">
+          <button class="btn primary" id="drawBtn">Dibujar</button>
+          <button class="btn" id="resetBtn">Restablecer vista</button>
+        </div>
+        <div class="btnbar" style="margin-top:8px">
+          <button class="btn" id="exportBtn">Exportar PNG</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Información</h2>
+        <div id="infoBox" class="small" style="line-height:1.45"></div>
+      </div>
+
+      <div class="group">
+        <h2>Ayuda</h2>
+        <div class="small">Rotar: arrastrar • Zoom: rueda/pellizcar • Desplazar: botón derecho o dos dedos.<br>Elige una geometría o un preajuste, activa los pares libres si lo deseas, ajusta la longitud de enlace y exporta PNG.</div>
+      </div>
+    </aside>
+
+    <main class="canvas-wrap">
+      <div id="three"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script>
+  // OrbitControls mínimo en línea
+  (function(){
+    if(!window.THREE) return;
+    function OrbitControls(object, dom){
+      const scope=this; this.object=object; this.domElement=dom||document; this.enabled=true;
+      this.target=new THREE.Vector3(); this.enableDamping=true; this.dampingFactor=0.08;
+      this.enableZoom=true; this.zoomSpeed=1; this.enableRotate=true; this.rotateSpeed=0.9;
+      this.enablePan=true; this.panSpeed=0.8; const STATE={NONE:-1,ROTATE:0,DOLLY:1,PAN:2}; let state=STATE.NONE;
+      const sph=new THREE.Spherical(), ds=new THREE.Spherical(); let scale=1; const panOff=new THREE.Vector3();
+      const q=new THREE.Quaternion().setFromUnitVectors(object.up,new THREE.Vector3(0,1,0)); const qInv=q.clone().invert();
+      const start=new THREE.Vector2(), end=new THREE.Vector2(), dS=new THREE.Vector2(), dE=new THREE.Vector2(), pS=new THREE.Vector2(), pE=new THREE.Vector2();
+      function norm(e){const r=scope.domElement.getBoundingClientRect();return new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,((e.clientY-r.top)/r.height)*2-1)}
+      function onDown(e){ if(!scope.enabled)return; e.preventDefault(); if(e.button===0){state=STATE.ROTATE;start.copy(norm(e));}
+        else if(e.button===1){state=STATE.DOLLY;dS.set(e.clientX,e.clientY);} else if(e.button===2){state=STATE.PAN;pS.set(e.clientX,e.clientY);} dom.addEventListener('mousemove',onMove); dom.addEventListener('mouseup',onUp); }
+      function onMove(e){ if(!scope.enabled)return; e.preventDefault(); if(state===STATE.ROTATE){ end.copy(norm(e)); ds.theta-=(end.x-start.x)*scope.rotateSpeed; ds.phi-=(end.y-start.y)*scope.rotateSpeed; start.copy(end);}
+        else if(state===STATE.DOLLY){ dE.set(e.clientX,e.clientY); const dy=dE.y-dS.y; scale*=Math.pow(0.95,dy*scope.zoomSpeed*0.2); dS.copy(dE);}
+        else if(state===STATE.PAN){ pE.set(e.clientX,e.clientY); const dx=pE.x-pS.x, dy=pE.y-pS.y; panLeft(dx*scope.panSpeed); panUp(dy*scope.panSpeed); pS.copy(pE);} }
+      function onUp(){ dom.removeEventListener('mousemove',onMove); dom.removeEventListener('mouseup',onUp); state=STATE.NONE; }
+      function onWheel(e){ if(!scope.enabled||!scope.enableZoom||e.deltaY===0)return; e.preventDefault(); scale*=Math.pow(0.95,e.deltaY*scope.zoomSpeed*0.1);}
+      function onContext(e){ e.preventDefault(); }
+      function panLeft(d){ const te=scope.object.matrix.elements; const x=new THREE.Vector3(te[0],te[1],te[2]); x.multiplyScalar(-d*0.002*dist()); panOff.add(x);}
+      function panUp(d){ const te=scope.object.matrix.elements; const y=new THREE.Vector3(te[4],te[5],te[6]); y.multiplyScalar(d*0.002*dist()); panOff.add(y);}
+      function dist(){ return scope.object.position.distanceTo(scope.target);}
+      this.update=function(){ const off=new THREE.Vector3(); off.copy(scope.object.position).sub(scope.target); off.applyQuaternion(q); sph.setFromVector3(off);
+        sph.theta+=ds.theta; sph.phi+=ds.phi; sph.makeSafe(); sph.radius*=scale;
+        scope.target.add(panOff); off.setFromSpherical(sph); off.applyQuaternion(qInv); scope.object.position.copy(scope.target).add(off); scope.object.lookAt(scope.target);
+        if(scope.enableDamping){ ds.theta*=1-scope.dampingFactor; ds.phi*=1-scope.dampingFactor; panOff.multiplyScalar(1-scope.dampingFactor); scale+=(1-scale)*scope.dampingFactor; if(Math.abs(1-scale)<1e-5) scale=1; }
+        else { ds.set(0,0,0); panOff.set(0,0,0);} };
+      dom.addEventListener('mousedown',onDown); dom.addEventListener('wheel',onWheel,{passive:false}); dom.addEventListener('contextmenu',onContext);
+    }
+    window.OrbitControls=OrbitControls;
+  })();
+  </script>
+
+  <script>
+    'use strict';
+    // ===== Estado global =====
+    let scene, camera, renderer, controls, currentGroup=null;
+    const el={ preset:gid('preset'), geometry:gid('geometry'), bondLength:gid('bondLength'), bondLenValue:gid('bondLenValue'), showLP:gid('showLP'), drawBtn:gid('drawBtn'), resetBtn:gid('resetBtn'), exportBtn:gid('exportBtn'), three:gid('three'), infoBox:gid('infoBox') };
+    const COLORS={ bg:0xf9fafc, central:0xd64545, terminal:0x2e6bd3, bond:0x2b2f36, lonePair:0x111111 };
+    function gid(id){ return document.getElementById(id); }
+
+    // ===== Inicialización =====
+    function init(){
+      scene=new THREE.Scene(); scene.background=new THREE.Color(COLORS.bg);
+      const w=el.three.clientWidth|| (window.innerWidth-360), h=el.three.clientHeight|| window.innerHeight;
+      camera=new THREE.PerspectiveCamera(50,w/h,0.1,1000); camera.position.set(4.2,3.2,5.0);
+      renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}); renderer.setSize(w,h); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); el.three.appendChild(renderer.domElement);
+      controls=new OrbitControls(camera, renderer.domElement); controls.enableDamping=true;
+      const amb=new THREE.AmbientLight(0xffffff,0.7); const d1=new THREE.DirectionalLight(0xffffff,0.6); d1.position.set(3,4,5); const d2=new THREE.DirectionalLight(0xffffff,0.4); d2.position.set(-4,2,-3); scene.add(amb,d1,d2);
+      window.addEventListener('resize',onResize);
+      animate(); draw();
+    }
+    function onResize(){ const w=el.three.clientWidth|| (window.innerWidth-360), h=window.innerHeight; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h); }
+    function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
+
+    // ===== VSEPR =====
+    const RAD=Math.PI/180;
+    function getDefinition(key){
+      const map={
+        AX2:{edType:'linear',ax:2,e:0}, AX3:{edType:'trigonal',ax:3,e:0}, AX2E:{edType:'trigonal',ax:2,e:1},
+        AX4:{edType:'tetra',ax:4,e:0}, AX3E:{edType:'tetra',ax:3,e:1}, AX2E2:{edType:'tetra',ax:2,e:2},
+        AX5:{edType:'tbp',ax:5,e:0}, AX4E:{edType:'tbp',ax:4,e:1}, AX3E2:{edType:'tbp',ax:3,e:2}, AX2E3:{edType:'tbp',ax:2,e:3},
+        AX6:{edType:'oct',ax:6,e:0}, AX5E:{edType:'oct',ax:5,e:1}, AX4E2:{edType:'oct',ax:4,e:2}
+      }; return map[key]||map.AX4; }
+
+    function getGeomNames(key){
+      const map = {
+        AX2:   { egeom:'lineal',                mgeom:'lineal',              ax:2, e:0 },
+        AX3:   { egeom:'trigonal plana',        mgeom:'trigonal plana',      ax:3, e:0 },
+        AX2E:  { egeom:'trigonal plana',        mgeom:'angular',             ax:2, e:1 },
+        AX4:   { egeom:'tetraédrica',           mgeom:'tetraédrica',         ax:4, e:0 },
+        AX3E:  { egeom:'tetraédrica',           mgeom:'pirámide trigonal',   ax:3, e:1 },
+        AX2E2: { egeom:'tetraédrica',           mgeom:'angular',             ax:2, e:2 },
+        AX5:   { egeom:'bipirámide trigonal',   mgeom:'bipirámide trigonal', ax:5, e:0 },
+        AX4E:  { egeom:'bipirámide trigonal',   mgeom:'balancín',            ax:4, e:1 },
+        AX3E2: { egeom:'bipirámide trigonal',   mgeom:'en T',                ax:3, e:2 },
+        AX2E3: { egeom:'bipirámide trigonal',   mgeom:'lineal',              ax:2, e:3 },
+        AX6:   { egeom:'octaédrica',            mgeom:'octaédrica',          ax:6, e:0 },
+        AX5E:  { egeom:'octaédrica',            mgeom:'pirámide cuadrada',   ax:5, e:1 },
+        AX4E2: { egeom:'octaédrica',            mgeom:'plana cuadrada',      ax:4, e:2 },
+      };
+      return map[key] || map.AX4;
+    }
+
+    function getElectronDomainVectors(type){
+      const v=[];
+      if(type==='linear'){ v.push(new THREE.Vector3( 1,0,0)); v.push(new THREE.Vector3(-1,0,0)); }
+      else if(type==='trigonal'){ [0,120*RAD,240*RAD].forEach(a=> v.push(new THREE.Vector3(Math.cos(a),Math.sin(a),0).normalize())); }
+      else if(type==='tetra'){ [new THREE.Vector3( 1, 1, 1), new THREE.Vector3(-1,-1, 1), new THREE.Vector3(-1, 1,-1), new THREE.Vector3( 1,-1,-1)].forEach(r=> v.push(r.clone().normalize())); }
+      else if(type==='tbp'){ [0,120*RAD,240*RAD].forEach(a=> v.push(new THREE.Vector3(Math.cos(a),Math.sin(a),0).normalize())); v.push(new THREE.Vector3(0,0, 1)); v.push(new THREE.Vector3(0,0,-1)); }
+      else if(type==='oct'){ v.push(new THREE.Vector3(1,0,0),new THREE.Vector3(-1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,-1,0),new THREE.Vector3(0,0,1),new THREE.Vector3(0,0,-1)); }
+      return v;
+    }
+
+    function assignLPandBP(edVectors, axCount, eCount){
+      const bonds=[], lps=[];
+      if(edVectors.length!==axCount+eCount){ console.warn('AXE inconsistente'); return {bondVectors:bonds, lonePairVectors:lps}; }
+      if(edVectors.length===2){ edVectors.forEach(v=>bonds.push(v.clone())); }
+      else if(edVectors.length===3){ const picks=pickFirst(axCount,3); edVectors.forEach((v,i)=> (picks.has(i)?bonds:lps).push(v.clone())); }
+      else if(edVectors.length===4){ const picks=pickFirst(axCount,4); edVectors.forEach((v,i)=> (picks.has(i)?bonds:lps).push(v.clone())); }
+      else if(edVectors.length===5){
+        const eq=[0,1,2], ax=[3,4]; const lpIdx=new Set(); let r=eCount;
+        for(const i of eq){ if(r>0){lpIdx.add(i); r--;}}
+        for(const i of ax){ if(r>0){lpIdx.add(i); r--;}}
+        edVectors.forEach((v,i)=> (lpIdx.has(i)?lps:bonds).push(v.clone()));
+      }
+      else if(edVectors.length===6){
+        if(eCount===1){
+          const z=edVectors.findIndex(v=>Math.abs(v.z)>0.9);
+          edVectors.forEach((v,i)=> (i=== (z!==-1?z:4) ? lps : bonds).push(v.clone()));
+        } else if(eCount===2){
+          const pz=edVectors.findIndex(v=>v.z>0.9), mz=edVectors.findIndex(v=>v.z<-0.9);
+          const set=new Set([pz,mz].filter(i=>i>=0));
+          if(set.size!==2){ set.clear(); set.add(4); set.add(5);}
+          edVectors.forEach((v,i)=> (set.has(i)?lps:bonds).push(v.clone()));
+        } else { edVectors.forEach(v=>bonds.push(v.clone())); }
+      }
+      return {bondVectors:bonds, lonePairVectors:lps};
+    }
+
+    function pickFirst(k,n){ const s=new Set(); for(let i=0;i<n&&s.size<k;i++) s.add(i); return s; }
+
+    // ===== Construcción y dibujo =====
+    function draw(){
+      const key=el.geometry.value;
+      const def=getDefinition(key);
+      const ed=getElectronDomainVectors(def.edType);
+      const split=assignLPandBP(ed, def.ax, def.e);
+      const BL=parseFloat(el.bondLength.value);
+
+      // Orientación por defecto de pares libres (LP):
+      //  - General: LP hacia +Y (arriba)
+      //  - AX5E: LP hacia -Y (abajo) → mejor pirámide cuadrada
+      //  - AX4E: LP hacia +X (derecha) → mejor “balancín” (dos enlaces arriba/abajo y dos a la izquierda)
+      if(def.e>0 && split.lonePairVectors.length>0){
+        const from=split.lonePairVectors[0].clone().normalize();
+        let to=new THREE.Vector3(0,1,0); // arriba por defecto
+        if(key==='AX5E'){ to=new THREE.Vector3(0,-1,0); } // abajo
+        else if(key==='AX4E'){ to=new THREE.Vector3(1,0,0); } // derecha
+        const q=new THREE.Quaternion().setFromUnitVectors(from,to);
+        split.bondVectors.forEach(v=>v.applyQuaternion(q));
+        split.lonePairVectors.forEach(v=>v.applyQuaternion(q));
+      }
+
+      if(currentGroup){ disposeGroup(currentGroup); scene.remove(currentGroup); }
+      currentGroup=new THREE.Group();
+
+      // átomo central
+      const central=makeSphere(COLORS.central,0.28); currentGroup.add(central);
+
+      // terminales + enlaces
+      split.bondVectors.forEach(v=>{
+        const pos=v.clone().multiplyScalar(BL);
+        const atom=makeSphere(COLORS.terminal,0.2); atom.position.copy(pos); currentGroup.add(atom);
+        const bond=makeBond(new THREE.Vector3(0,0,0), pos, COLORS.bond, 0.06); currentGroup.add(bond);
+      });
+
+      // pares libres
+      if(el.showLP.checked){
+        split.lonePairVectors.forEach(v=>{
+          const lp=makeLonePairGlyph(v, Math.max(0.35, 0.55*BL), 0.1);
+          currentGroup.add(lp);
+        });
+      }
+
+      scene.add(currentGroup);
+      updateInfo(key);
+    }
+
+    function disposeGroup(g){
+      g.traverse(o=>{
+        if(o.isMesh){
+          o.geometry && o.geometry.dispose && o.geometry.dispose();
+          if(Array.isArray(o.material)){ o.material.forEach(m=>m&&m.dispose&&m.dispose()); }
+          else if(o.material){ o.material.dispose && o.material.dispose(); }
+        }
+      });
+    }
+
+    // ===== Primitivas =====
+    function makeSphere(color,r){
+      const geo=new THREE.SphereGeometry(r,36,32);
+      const mat=new THREE.MeshStandardMaterial({color,roughness:0.35,metalness:0.0});
+      return new THREE.Mesh(geo,mat);
+    }
+    function makeBond(a,b,color,rad){
+      const dir=new THREE.Vector3().subVectors(b,a);
+      const geo=new THREE.CylinderGeometry(rad,rad,dir.length(),32);
+      const mat=new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.1});
+      const m=new THREE.Mesh(geo,mat);
+      const mid=new THREE.Vector3().addVectors(a,b).multiplyScalar(0.5);
+      m.position.copy(mid);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+      return m;
+    }
+    function orth(v){
+      if(Math.abs(v.x)<0.5) return new THREE.Vector3(0,-v.z,v.y).normalize();
+      else return new THREE.Vector3(-v.y,v.x,0).normalize();
+    }
+    function makeLonePairGlyph(dir,dist,size){
+      const g=new THREE.Group();
+      const n=dir.clone().normalize();
+      const c=n.clone().multiplyScalar(dist);
+      const s=orth(n).setLength(size*0.6);
+      const p1=c.clone().add(s), p2=c.clone().sub(s);
+      const s1=makeSphere(COLORS.lonePair,size*0.5), s2=makeSphere(COLORS.lonePair,size*0.5);
+      s1.position.copy(p1); s2.position.copy(p2);
+      g.add(s1,s2);
+      return g;
+    }
+
+    // ===== Info =====
+    function updateInfo(key){
+      const names = getGeomNames(key);
+      const totalED = names.ax + names.e;
+      el.infoBox.innerHTML =
+        '<strong>Fórmula AXE:</strong> <code>'+key+'</code><br>'+
+        '<strong>Geometría electrónica:</strong> '+names.egeom+'<br>'+
+        '<strong>Geometría molecular:</strong> '+names.mgeom+'<br>'+
+        '<strong>Pares enlazantes (X):</strong> '+names.ax+' &nbsp;•&nbsp; <strong>Pares solitarios (E):</strong> '+names.e+'<br>'+
+        '<strong>Dominios electrónicos totales:</strong> '+totalED;
+    }
+
+    // ===== UI =====
+    el.preset.addEventListener('change',()=>{ if(el.preset.value){ el.geometry.value=el.preset.value; draw(); } });
+    el.geometry.addEventListener('change',()=>{ draw(); });
+    el.bondLength.addEventListener('input',()=>{ el.bondLenValue.textContent=Number(el.bondLength.value).toFixed(2).replace('.',',')+' Å (relativa)'; });
+    el.drawBtn.addEventListener('click',draw);
+    el.resetBtn.addEventListener('click',()=>{ controls.target.set(0,0,0); camera.position.set(4.2,3.2,5.0); controls.update(); });
+    el.exportBtn.addEventListener('click',()=>{ const a=document.createElement('a'); a.download='vsepr.png'; a.href=renderer.domElement.toDataURL('image/png'); a.click(); });
+
+    // Arranque
+    if(window.THREE){ init(); }
+  </script>
+ <!-- Firma visible -->
+<footer id="vsepr-author" style="
+  position:fixed;
+  right:12px;
+  bottom:8px;
+  font-size:12px;
+  color:#6b7280;
+  background:rgba(255,255,255,0.85);
+  padding:6px 10px;
+  border-radius:8px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  user-select:none;
+  z-index:9999;
+  pointer-events:none;
+">
+  Creado por: Dr. A. Hernán-Gómez
+</footer>
+
+</body>
+</html>
