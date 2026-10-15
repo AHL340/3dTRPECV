@@ -2,7 +2,7 @@
 # Visor 3D VSEPR
 
 **Visor tridimensional de geometrías moleculares** basado en la **Teoría de Repulsión de Pares de Electrones de la Capa de Valencia (TRPECV)**.  
-Permite visualizar y manipular libremente las distintas geometrías moleculares en tres dimensiones, sin necesidad de instalar programas externos.  
+Permite visualizar y manipular libremente las distintas geometrías moleculares en tres dimensiones.
 Creado como herramienta docente para facilitar la comprensión de las geometría electrónica y molecular.
 
 ---
